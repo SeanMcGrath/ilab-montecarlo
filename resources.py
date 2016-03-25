@@ -1,6 +1,7 @@
 import random
 import math
 import functools
+import numpy as np
 
 # constants
 CHI_0 = 8.9 #cm
@@ -16,52 +17,70 @@ def random_m_mu():
 def fermi(muon_mass, energy):
     return (muon_mass * energy)**2 * (3 - 4*energy/muon_mass)
 
-# define any function here!
-def random_from_distribution(distribution_func, xmin, xmax):
-    # f(x) = 1.0 : for uniform probability distribution
 
-    # f(x) = x : for triangular probability distribution
-    # (math.sqrt(random.random()) would also produce triangular p.d. though.)
-
-    # f(x) = math.exp(-x*x/2.0)/math.sqrt(2.0*math.pi) : for std normal p.d.
-    # (taking average of (last) 2,3,... random.random() values would also
-    # produce normal probability distributions though.)
-
-    to_return = []
-
-    # find ymin-ymax
-    numSteps = 1000000 # bigger the better but slower!
-    ymin = distribution_func(xmin)
-    ymax = ymin
-    for i in range(numSteps):
-        x = xmin + (xmax - xmin) * float(i) / numSteps
-        y = distribution_func(x)
-        if y < ymin: ymin = y
-        if y > ymax: ymax = y
-
-    while y <= distribution_func(x):
-        # generate a random number between 0 to 1
-        xr = random.random()
-        yr = random.random()
-        x = xmin + (xmax - xmin) * xr
-        y = ymin + (ymax - ymin) * yr
+class GeneralRandom:
+  """This class enables us to generate random numbers with an arbitrary 
+  distribution."""
+  
+  def __init__(self, x = np.arange(-1.0, 1.0, .01), p = None, Nrl = 1000):
+    """Initialize the lookup table (with default values if necessary)
+    Inputs:
+    x = random number values
+    p = probability density profile at that point
+    Nrl = number of reverse look up values between 0 and 1"""  
+    if p is None:
+      p = np.exp(-10*x**2.0)
+    self.set_pdf(x, p, Nrl)
     
-    return y
+  def set_pdf(self, x, p, Nrl = 1000):
+    """Generate the lookup tables. 
+    x is the value of the random variate
+    pdf is its probability density
+    cdf is the cumulative pdf
+    inversecdf is the inverse look up table
+    
+    """
+    
+    self.x = x
+    self.pdf = p/p.sum() #normalize it
+    self.cdf = self.pdf.cumsum()
+    self.inversecdfbins = Nrl
+    self.Nrl = Nrl
+    y = np.arange(Nrl)/float(Nrl)
+    delta = 1.0/Nrl
+    self.inversecdf = np.zeros(Nrl)    
+    self.inversecdf[0] = self.x[0]
+    cdf_idx = 0
+    for n in range(1,self.inversecdfbins):
+      while self.cdf[cdf_idx] < y[n] and cdf_idx < Nrl:
+        cdf_idx += 1
+      self.inversecdf[n] = self.x[cdf_idx-1] + (self.x[cdf_idx] - self.x[cdf_idx-1]) * (y[n] - self.cdf[cdf_idx-1])/(self.cdf[cdf_idx] - self.cdf[cdf_idx-1]) 
+      if cdf_idx >= Nrl:
+        break
+    self.delta_inversecdf = np.concatenate((np.diff(self.inversecdf), [0]))
+              
+  def random(self, N = 1000):
+    """Give us N random numbers with the requested distribution"""
 
+    idx_f = np.random.uniform(size = N, high = self.Nrl-1)
+    idx = np.array([idx_f],'i')
+    y = (self.inversecdf[idx] + (idx_f - idx)*self.delta_inversecdf[idx])[0]
+
+    return y
+  
 
 class Electron:
     
     Z0_LIMITS = (0, PLATE_THICKNESS) #cm
-    R_LIMITS = (0, R/2) #cm
     THETA_LIMITS = (0, math.pi/6) #rad
     PHI_LIMITS = (0, 2*math.pi) #rad
 
-    def __init__(self, muon_mass):
+    def __init__(self, muon_mass, energy, r):
         self.z0     = random.uniform(*self.Z0_LIMITS)
-        self.r      = random.uniform(*self.R_LIMITS)
         self.theta  = random.uniform(*self.THETA_LIMITS)
         self.phi    = random.uniform(*self.PHI_LIMITS)
-        self.energy = random_from_distribution(functools.partial(fermi, muon_mass), 0, muon_mass/2)
+        self.energy = energy
+        self.r      = r
 
     def __repr__(self):
         return "track: {} escape: {} sparks: {}".format(
