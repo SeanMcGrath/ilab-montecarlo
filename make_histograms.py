@@ -9,16 +9,21 @@ from matplotlib import pyplot as plt
 
 from resources import *
 
+sns.set(context='poster', font_scale=1.5, style='white')
+
 try:
 	num_decays = int(sys.argv[1])
 except:
 	num_decays = 10000
 
+ref_x = [1, 2, 3, 4, 5, 6, 7]
 ref_data = np.array([0, 0, 4, 7, 13, 15, 4])
-sum_residuals = []
-masses = range(60, 145, 5)
 
-for muon_mass in masses:
+masses = [90, 100]
+
+f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+
+for muon_mass, ax in zip(masses, (ax1, ax2)):
 	# generate random energies
 	energy_pdf = []
 	energies = []
@@ -43,13 +48,14 @@ for muon_mass in masses:
 	sparks = [e.sparks for e in electrons]
 
 	hist = np.histogram(sparks, bins=[el-0.5 for el in range(1, 9)])[0]
-	hist = np.array([(sum(ref_data)/num_decays)*el for el in hist])
-	residuals = np.square(ref_data - hist)
-	print(residuals.sum())
-	sum_residuals.append(muon_mass, residuals.sum())
-	# plt.hist(sparks, bins=[el-0.5 for el in range(1, 9)])
-	# plt.xlim(-0.5, 7.5)
-	# plt.title('spark counts for muon mass = ' + str(muon_mass))
-	# plt.show()
+	scaled_hist = np.array([(sum(ref_data)/num_decays)*el for el in hist])
 
-print(min(sum_residuals, key=lambda x: x[1]))
+	# plt.hist(sparks, bins=[el-0.5 for el in range(1, 9)])
+	ax.bar(ref_x, scaled_hist, label='Theoretical', color='0.75')
+	ax.errorbar([el + .4 for el in ref_x], ref_data, yerr=np.sqrt(ref_data), fmt='ko', label='Experimental')
+
+ax1.set_title('Spark Counts for Different Muon Masses')
+ax1.text(7, 15, '90 MeV')
+ax2.text(7, 15, '100 MeV')
+ax1.legend(loc=2)
+plt.show()

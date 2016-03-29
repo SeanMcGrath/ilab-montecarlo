@@ -9,6 +9,8 @@ from matplotlib import pyplot as plt
 
 from resources import *
 
+sns.set(context='poster', font_scale=1.5, style='white')
+
 try:
 	num_decays = int(sys.argv[1])
 except:
@@ -45,11 +47,14 @@ for muon_mass in masses:
 	hist = np.histogram(sparks, bins=[el-0.5 for el in range(1, 9)])[0]
 	hist = np.array([(sum(ref_data)/num_decays)*el for el in hist])
 	residuals = np.square(ref_data - hist)
-	print(residuals.sum())
-	sum_residuals.append(muon_mass, residuals.sum())
-	# plt.hist(sparks, bins=[el-0.5 for el in range(1, 9)])
-	# plt.xlim(-0.5, 7.5)
-	# plt.title('spark counts for muon mass = ' + str(muon_mass))
-	# plt.show()
+	sum_residuals.append(residuals.sum())
 
-print(min(sum_residuals, key=lambda x: x[1]))
+plt.plot(masses, sum_residuals, 'ko')
+plt.plot(masses, sum_residuals, 'k--')
+plt.ylabel('Sum of Squared Residuals')
+plt.xlabel('Muon Mass (MeV)')
+plt.xlim(50, 150)
+plt.annotate('Minimum', xy=(masses[8], sum_residuals[8] + 5), xytext=(masses[8] - 5, sum_residuals[8] + 45),\
+	arrowprops=dict(facecolor='black', shrink=0.05))
+plt.title('Effect of Model Muon Mass on Model Residuals')
+plt.show()
