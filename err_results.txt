@@ -1,0 +1,3 @@
+Average: 99.575
+STD: 1.64
+Num_trials: 20
