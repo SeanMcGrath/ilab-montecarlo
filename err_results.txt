@@ -1,3 +1,4 @@
-Average: 99.575
-STD: 1.64
-Num_trials: 20
+minimum mass: 	100.7007
+1 SD:		96.6289	102.8907
+2 SD:		91.8593	106.6010
+

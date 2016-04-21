@@ -67,7 +67,7 @@ def monte(muon_mass):
 
 	hist = np.histogram(sparks, bins=[el-0.5 for el in range(1, 9)])[0]
 	hist = hist * sum(ref_data)/num_decays
-	return chisq(ref_data, hist, ref_err, 2)
+	return chisq(ref_data, hist, ref_err)
 
 results = []
 masses = np.linspace(80, 120, 200)
@@ -77,19 +77,23 @@ x_arr = np.linspace(min(masses), max(masses), 1000)
 y_arr = [interp(x) for x in x_arr]
 min_y = min(y_arr)
 plt.plot(x_arr, y_arr, 'k')
-plt.plot((0, 200), (min_y+4, min_y+4), 'k:')
-plt.plot((0, 200), (min_y+1, min_y+1), 'k--')
+plt.plot((0, 200), (min_y+1, min_y+1), 'k:')
+plt.plot((0, 200), (min_y+4, min_y+4), 'k-.')
 plt.plot((0, 200), (min_y, min_y), 'k--')
-plt.ylabel('Reduced $\chi^2$')
+plt.ylabel('$\chi^2$')
 plt.xlabel('Muon Mass (MeV)')
 plt.xlim(85, 115)
-plt.ylim(0.2, 2.2)
+plt.ylim(1, 18)
+plt.title('Monte Carlo Error Analysis')
 min_mass = x_arr[y_arr.index(min_y)]
 x = fsolve(lambda x: interp(x) - (min_y +1), x0=(90, 110))
 print('minimum mass:\t', min_mass)
-print('1 sigma:\t', x[0], x[1])
+print('extrema:\t', x[0], x[1])
 x = fsolve(lambda x: interp(x) - (min_y +4), x0=(90, 110))
 print('2 sigma:\t', x[0], x[1])
+plt.text(99, min_y + 1.2, '+1 $\sigma$')
+plt.text(99, min_y + 4.2, '+2 $\sigma$')
+plt.text(98, min_y - .6, 'Minimum')
 plt.show()
 	
 
